@@ -13,7 +13,7 @@
 #endif /* DATA_STRUCT_H */
 
 #define NUM_COMANDOS_RES 6
-#define NUM_COMANDOS_SUEF 10
+#define NUM_COMANDOS_SUEF 13
 
 ///////////////
 // Workspace //
@@ -30,16 +30,18 @@ int measure_dataset(struct system_t * system, FILE * fp)
 	fseek(fp, 0, SEEK_SET); //go to beggining of fil
 
 	/* header management */
-	fgets(buf, sizeof(buf), fp);  //skip header's line in row count
-	if(buf[0]=='#')
+	fgets(buf, sizeof(buf), fp);  //skip header's line in row count    
+	token = strtok(buf, delim);
+
+	if(token[0]=='#')
 		system->hasheader = 1;	
 	else
 	{
 		rows ++;
 		system->hasheader = 0;
 	}
+
 	/* column management */
-	token = strtok(buf, delim);
 	while( token != NULL ) // Count tokens skipping separators
 	{
 		cols ++;
@@ -190,128 +192,47 @@ int produce_file(struct system_t * system)
 /* produces graphics using gnuplot*/
 void produce_graphics_gnuplot(struct system_t * system)
 {
-	FILE * windowres;
-    FILE * windowsuef;
 	int i;
 
-	char * results[] = 
+	char * results_com[] = 
 		{
 			"set title \"Exec. time\"",
-			"set ylabel \"Tex (ms)\"",
+			"set ylabel \"Runtime (ms)\"",
 			"set xlabel \"Processors (int)\"",
 			"set terminal png",
 			"set output \"./imgs/runtime.png\"",
-			"plot \"./out/results.txt\" u 1:2 title \"runtime\" w points"
+			"plot \"./out/results.txt\" u 1:2 notitle w lp"
 		};
 
-	char * suef[] = 
+	char * suef_com[] = 
 		{
-			"set title \"Speed-up & Efficiency\"",
-			"set ylabel \"Speed-up (fl)\"",
+			"set title \"Speed up and Efficiency\"",
+			"set ylabel \"Speed up (fl)\"",
 			"set y2label \"Efficiency (fl)\"",
 			"set xlabel \"Processors (int)\"",
-			"set autoscale",
-			"set xtic auto",
-			"set ytic auto",
+            "set y2range [0:100]",
+            "set format y2 \"%g%%\"",
+            "set y2tics nomirror",
+            "set logscale x",
+            "set logscale y",
+            "set key bottom right box lt -1 lw 2",
 			"set terminal png",
-			"set output \"./imgs/suef.png\"",
-			"plot \"./out/results.txt\" u 1:3 title \"speed-up\" w lines",
-			"plot \"./out/results.txt\" u 1:4 title \"efficiency\" w dots"
+			"set output \"./imgs/speedup_efficiency.png\"",
+			"plot \"./out/results.txt\" u 1:3 title \"speed-up\" axes x1y1 w lp, \"./out/results.txt\" u 1:(100*$4) title \"efficiency\" axes x1y2 w lp"
 		};
 
-	/* Create poen file to execute gnuplot and send file two plot*/
-    windowres = popen ("gnuplot -persist", "w");
-    windowsuef = popen ("gnuplot -persist", "w");
+	/* Create poen file to execute gnuplot*/
+    FILE * window = popen("gnuplot -persist", "w");
 
     /* Execute gnuplot commands one by one */
     for (i=0; i<NUM_COMANDOS_RES; i++){
-		fprintf(windowres, "%s \n", results[i]);
+		fprintf(window, "%s \n", results_com[i]);
 	}
 
 	/* Execute gnuplot commands one by one */
     for (i=0; i<NUM_COMANDOS_SUEF; i++)
 	{
-		fprintf(windowsuef, "%s \n", suef[i]);
+		fprintf(window, "%s \n", suef_com[i]);
 	}
 }
 
-
-/* 
-TODO: check tema sobre la marcha
-min max dev in same file or two better?
-paralelizar in any way
-checl PNG etc
-*/
-
-
-/*
-void produce_graphics_pbplot(struct system_t * system) 
-{
-	unsigned int i;
-	double *pngData;
-
-    RGBABitmapImageReference* imageref = CreateRGBABitmapImageReference();
-
-	ScatterPlotSeries* series_r = GetDefaultScatterPlotSeriesSettings();
-	series_r->xs = system->ncpus;
-	series_r->ys = system->nruns;
-	series_r->linearInterpolation = false;
-	series_r->lineType = toVector(L"solid");
-	series_r->color = CreateRGBColor(0, 0, 1);
-
-	ScatterPlotSeries* series_idr = GetDefaultScatterPlotSeriesSettings();
-	series_idr->xs = system->ncpus;
-	series_idr->ys = system->nruns;
-	series_idr->linearInterpolation = false;
-	series_idr->lineType = toVector(L"dotted");
-	series_idr->color = CreateRGBColor(0, 1, 1);
-
-	ScatterPlotSeries* series_su = GetDefaultScatterPlotSeriesSettings();
-	series_su->xs = system->ncpus;
-	series_su->ys = system->nruns;
-	series_su->linearInterpolation = false;
-	series_su->lineType = toVector(L"longdash");
-	series_su->color = CreateRGBColor(0, 1, 0);
-
-	ScatterPlotSeries* series_ef = GetDefaultScatterPlotSeriesSettings();
-	series_ef->xs = system->ncpus;
-	series_ef->ys = system->nruns;
-	series_ef->linearInterpolation = false;
-	series_ef->lineType = toVector(L"dotdash");
-	series_ef->color = CreateRGBColor(1, 0, 0);
-
-    ScatterPlotSettings* settings1 = GetDefaultScatterPlotSettings();
-    settings->width = 800;
-    settings->height = 480;
-    settings->autoBoundaries = true;
-    settings->autoPadding = true;
-    settings->title = toVector(L"Exec. time");
-    settings->xLabel = toVector(L"Processors (int)");
-    settings->yLabel = toVector(L"Runtime (ms)");
-    settings->scatterPlotSeries->push_back(series_r);
-    settings->scatterPlotSeries->push_back(series_idr);
-
-	ScatterPlotSettings* settings2 = GetDefaultScatterPlotSettings();
-    settings->width = 800;
-    settings->height = 480;
-    settings->autoBoundaries = true;
-    settings->autoPadding = true;
-    settings->title = toVector(L"Speedup and Efficiency");
-    settings->xLabel = toVector(L"Processors (int)");
-    settings->yLabel = toVector(L"Speedup (fl)");
-    settings->y2Label = toVector(L"Efficiency (fl)");
-    settings->scatterPlotSeries->push_back(series_su);
-    settings->scatterPlotSeries->push_back(series_ef);
-
-	DrawScatterPlotFromSettings(imageref, settings1);	
-	pngData = ConvertToPNG(imageref->image);
-    WriteToFile(pngData, "../graphics/plot_exec_time.png");
-	DeleteImage(imageReference->image); //////////////////////////////////////////////effect???
-
-		
-	DrawScatterPlotFromSettings(imageref, settings2);
-	pngData = ConvertToPNG(imageref->image);
-    WriteToFile(pngData, "../graphics/plot_peedup_efficiency.png");
-	DeleteImage(imageReference->image);
-}
-*/
