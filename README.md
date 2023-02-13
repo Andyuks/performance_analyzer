@@ -4,6 +4,7 @@ This code uses gnuplot to plot the results of a performance analysis.
 Thus, gnuplot needs to be installed for its execution.
 
 *******************************************************
+*Compilation*
 
 Compilation is done through a makefile
 
