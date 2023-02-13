@@ -20,3 +20,9 @@ Use: ./analyzer [OPTIONS]
 --h, --help 		 Help
 
 -f, --filename=S 		 Name of the dataset file
+
+*********************************************************
+*Example of use*
+./analyzer
+./analyzer -f input/prueba_escalabilidad_2.txt 
+./analyzer --filename input/prueba.escalabilidad.txt 
