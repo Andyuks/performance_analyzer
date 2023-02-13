@@ -12,7 +12,7 @@
 	#include "../include/data_struct.h"
 #endif /* DATA_STRUCT_H */
 
-#define NUM_COMMANDS_RES 7
+#define NUM_COMMANDS_RUNTIME 7
 #define NUM_COMMANDS_SUEF 13
 
 ///////////////
@@ -261,7 +261,7 @@ int produce_graphics_gnuplot(struct system_t * system)
 
 
     /* Execute gnuplot commands one by one (runtime)*/
-    for (i=0; i<NUM_COMMANDS_RES; i++){
+    for (i=0; i<NUM_COMMANDS_RUNTIME; i++){
 		fprintf(window, "%s \n", runtime_com[i]);
 	}
 
