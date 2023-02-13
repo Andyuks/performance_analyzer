@@ -12,8 +12,8 @@
 	#include "../include/data_struct.h"
 #endif /* DATA_STRUCT_H */
 
-#define NUM_COMANDOS_RES 6
-#define NUM_COMANDOS_SUEF 13
+#define NUM_COMMANDS_RES 7
+#define NUM_COMMANDS_SUEF 13
 
 ///////////////
 // Workspace //
@@ -22,78 +22,96 @@
 /* obtains quantity of cpus and runs out of the dataset */
 int measure_dataset(struct system_t * system, FILE * fp)
 {
-	unsigned int cols=0, rows=0;
 	char buf[1024];
 	const char delim[5] = "\t\n ,";
 	char* token;
+    system->ncpus = 0;
+    
+    /* Check if file is empty */
+    fseek(fp, 0, SEEK_END); // Go to end of file
+    if (ftell(fp) == 0)
+    {
+        fprintf(stderr,"\033[1;31mError: file is empty.\033[0m\n");
+		return(ERROR_FORMAT);           
+    }
 
-	fseek(fp, 0, SEEK_SET); //go to beggining of fil
+	fseek(fp, 0, SEEK_SET); // Go to beggining of file
 
-	/* header management */
-	fgets(buf, sizeof(buf), fp);  //skip header's line in row count    
+	/* Header management */
+	fgets(buf, sizeof(buf), fp);
 	token = strtok(buf, delim);
+    if(token!=NULL) // Get if dataset has data in first line
+    {
+	    if(token[0]=='#') // Get if file has header
+		    system->hasheader = 1;	
+	    else
+	    {
+		    system->ncpus ++;
+		    system->hasheader = 0;
+	    }
+    }
+    else
+    {
+        fprintf(stderr,"\033[1;31mError: file does not have due format.\033[0m\n");
+        return(ERROR_FORMAT);
+    }
 
-	if(token[0]=='#')
-		system->hasheader = 1;	
-	else
-	{
-		rows ++;
-		system->hasheader = 0;
-	}
-
-	/* column management */
-	while( token != NULL ) // Count tokens skipping separators
-	{
-		cols ++;
-		token = strtok(NULL, delim);
-	}
-
-	/* row management */
+	/* Row management */
 	while(fgets(buf, sizeof(buf), fp) != NULL)
-		rows++;
+		system->ncpus++;
 
-	system->ncpus = rows;
-	system->nruns = cols -1;
-
+    /* Print processor number */
 	printf("\033[1;34m** File analysis **\033[0m\n");
-	printf("\033[1;34m> CPUs:\033[0m %d\n", system->ncpus);
-	printf("\033[1;34m> Runs:\033[0m %d\n", system->nruns);	
-
-	if(system->ncpus < 1 || system->nruns < 1)
-	{
-		fprintf(stderr,"\033[1;31mError: no information can be obtained from the provided dataset.\033[0m\n"); //////////////////////////////////////////////////////// error check?
-		return(ERROR_MEASURES);
-	}
+	printf("\033[1;34m> CPUs:\033[0m %d\n\n", system->ncpus);
 	return(0);
 }
 
 /* obtains due data out of the dataset */
-void analzye_dataset(struct system_t * system, FILE * fp)
+void analyze_dataset(struct system_t * system, FILE * fp)
 {
-	unsigned int i, j;
-	float time;
+	unsigned int i, runs;
 	char buf[1024];
+	const char delim[5] = "\t\n ,";
+	char* token;
 
-	fseek(fp, 0, SEEK_SET); //go to beggining of file
+
+	fseek(fp, 0, SEEK_SET); // Go to beggining of file
 
 	if(system->hasheader)
-		fgets(buf, sizeof(buf), fp);  //skip header's line
+		fgets(buf, sizeof(buf), fp);  // Skip header's line
 
 	for(i=0; i<system->ncpus; i++)
 	{
-		fscanf(fp, "%d", &(system->cpus[i]));
+        /* Obtain cpu number */
+        fgets(buf, sizeof(buf), fp);
+        token = strtok(buf, delim);
+        system->cpus[i] = atoi(token);
 
-		for(j=0; j<system->nruns; j++)
-		{
-			fscanf(fp, " %f", &time);
-			system->runtime[i] += time;
+        /* prepare variables */
+        token = strtok(NULL, delim);
+        runs = 0;
+
+		while( token != NULL ) 
+		{            
+            /* Obtain run data */            
+            system->runtime[i] +=  strtod(token, NULL);
+            runs ++;
+            token = strtok(NULL, delim);
 		}
 
-		system->runtime[i] = system->runtime[i] / system->nruns;
-		system->speedup[i] = system->runtime[0] / system->runtime[i];
-		system->efficiency[i] = system->speedup[i] / system->cpus[i];
+        /* Save due data */
+        if(runs==0) // case no data
+        {
+            system->runtime[i] = 0;
+		    system->speedup[i] = 0;
+		    system->efficiency[i] = 0;
+        }
+        else{ // case there is data
+		    system->runtime[i] = system->runtime[i] / runs;
+		    system->speedup[i] = system->runtime[0] / system->runtime[i];
+		    system->efficiency[i] = system->speedup[i] / system->cpus[i];
+        }
 	}
-
 }
 
 /* builds the workspace out of the dataset */
@@ -102,21 +120,22 @@ int set_workspace(struct system_t * system, char * name)
 	int ret;
 	FILE * fp = fopen(name, "r");
 	printf("\033[1;34m> Dataset location:\033[0m%s\n\n", name);
-	/*check if file correctly opened*/
+
+	/* Check if file has been correctly opened*/
 	if(fp == NULL)
 	{
 		fprintf(stderr,"\033[1;31mError: file could not be opened.\033[0m\n");
 		return(ERROR_FILE);
 	}
 
-	/* measure dimmensions and load data in system */
+	/* Measure dimmensions and load data in system */
 	ret = measure_dataset(system, fp);
 	if(ret != 0){
 		fclose(fp);
-		return(1);
+		return(ret);
 	}
 	initialize_system(system);
-	analzye_dataset(system, fp);
+	analyze_dataset(system, fp);
 
 	fclose(fp);
 	return(0);
@@ -128,13 +147,15 @@ int set_workspace(struct system_t * system, char * name)
 /////////////
 // Results //
 /////////////
-/* prints the results*/
+/* Prints the results obtained */
 void print_results(struct system_t * system, FILE * fp)
 {
 	unsigned int i;
+    /* print header */
 	fprintf(fp, "#procs\truntime\t\tspeedup\t\tefficiency\n");
 	fprintf(fp, "#=====\t=======\t\t=======\t\t==========\n");
 
+    /* print results */
 	for(i=0; i < system->ncpus; i++)
 	{
 		fprintf(fp, "%d\t", system->cpus[i]);
@@ -144,66 +165,68 @@ void print_results(struct system_t * system, FILE * fp)
 	}
 }
 
-
-int dirmanagement(){
-	DIR* dir = opendir("./out");
+/* Gets if a directory exists and has due permissions, as well as create it if it does not exist */
+int dirmanagement(char * dirname){
+	DIR* dir = opendir(dirname);
 	int ret=0;
-	if (dir) { /* directory exists */
+	if (dir) { /* Directory exists */
 		closedir(dir);
 	} else if (ENOENT == errno) { /* Directory does not exist. */
-		if((mkdir("./out", 0750))!=0)
+		if((mkdir(dirname, 0750))!=0)
 		{
 			fprintf(stderr,"\033[1;31mError: output directory could not be created.\033[0m\n");
 			ret = ERROR_DIR;
 		} 
 		
 	} else { /* opendir() failed for some other reason. */
-		fprintf(stderr,"\033[1;31mError: output directory could not be opened.\033[0m\n");
+		fprintf(stderr,"\033[1;31mError: directory could not be opened.\033[0m\n");
 		ret = ERROR_DIR;
 	}
 	return(ret);
 }
 
 
-/* produces a file with the results */
+/* Produces a file with the results obtained */
 int produce_file(struct system_t * system)
 {
-	int dir;
-	FILE * fileruntime;
+	int retdir;
+	FILE * fileresults;
 
-	/* check if dir exists */
-	dir = dirmanagement();
-	if(dir!=0) return(dir);
+	/* Check if directory ./out exists */
+	retdir = dirmanagement("./out");
+	if(retdir!=0) return(retdir);
 
-	/*open file and check if file correctly opened*/
-	fileruntime = fopen("./out/results.txt", "w");
-	if(fileruntime == NULL)
+	/* Open file and check if file has been correctly opened*/
+	fileresults = fopen("./out/results.txt", "w");
+	if(fileresults == NULL)
 	{
 		fprintf(stderr,"\033[1;31mError: result file could not be opened/created.\033[0m\n");
 		return(ERROR_FILE);
 	}
 
-	/* write results and close file */
-	print_results(system, fileruntime);
-	fclose(fileruntime);
+	/* Write results and close file */
+	print_results(system, fileresults);
+	fclose(fileresults);
 	return(0);
 }
 
 /* produces graphics using gnuplot*/
-void produce_graphics_gnuplot(struct system_t * system)
+int produce_graphics_gnuplot(struct system_t * system)
 {
-	int i;
-
-	char * results_com[] = 
+	int i, retdir;
+    /* Commands for runtime plot */
+	char * runtime_com[] = 
 		{
 			"set title \"Exec. time\"",
 			"set ylabel \"Runtime (ms)\"",
 			"set xlabel \"Processors (int)\"",
+            "set logscale x",
 			"set terminal png",
 			"set output \"./imgs/runtime.png\"",
 			"plot \"./out/results.txt\" u 1:2 notitle w lp"
 		};
 
+    /* Commands for speed up and efficiency plot */
 	char * suef_com[] = 
 		{
 			"set title \"Speed up and Efficiency\"",
@@ -224,15 +247,22 @@ void produce_graphics_gnuplot(struct system_t * system)
 	/* Create poen file to execute gnuplot*/
     FILE * window = popen("gnuplot -persist", "w");
 
-    /* Execute gnuplot commands one by one */
-    for (i=0; i<NUM_COMANDOS_RES; i++){
-		fprintf(window, "%s \n", results_com[i]);
+	/* Check if directory ./imgs exists */
+	retdir = dirmanagement("./imgs");
+	if(retdir!=0) return(retdir);
+
+
+    /* Execute gnuplot commands one by one (runtime)*/
+    for (i=0; i<NUM_COMMANDS_RES; i++){
+		fprintf(window, "%s \n", runtime_com[i]);
 	}
 
-	/* Execute gnuplot commands one by one */
-    for (i=0; i<NUM_COMANDOS_SUEF; i++)
+	/* Execute gnuplot commands one by one (speed up and efficiency)*/
+    for (i=0; i<NUM_COMMANDS_SUEF; i++)
 	{
 		fprintf(window, "%s \n", suef_com[i]);
 	}
+    return(0);
 }
+
 

@@ -37,15 +37,17 @@ int main (int argc, char * argv[]){
 	/* print and export results */
 	print_results(&system, stdout);
 	ret = produce_file(&system);
-	if(ret!=0)	exit(ret);
-
+	if(ret!=0)	
+    {
+        free_system(&system); 
+        exit(ret);
+    }
 	/* produce graphics */
-	produce_graphics_gnuplot(&system);
+	ret = produce_graphics_gnuplot(&system);
 
 	/* free memory */
 	free_system(&system); 
-	
-	exit(0);
+	exit(ret);
 }
 
 
@@ -58,7 +60,9 @@ void parse_arguments(int argc, char *argv[], char * filename)
         {"filename",      required_argument, 0,  'f' },
         {0,            0,                 0,   0  }
     };
-	strcpy(filename, "./input/prueba.escalabilidad.txt");
+	strcpy(filename, "./input/prueba.escalabilidad.txt"); // default filename
+    
+    /* Manage options */
 	while ((o = getopt_long(argc, argv,":h:f:", 
                         long_options, &long_index )) != -1) 
 	{
