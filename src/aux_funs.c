@@ -238,8 +238,8 @@ int produce_graphics_gnuplot(struct system_t * system)
 	char * suef_com[] = 
 		{
 			"set title \"Speed up and Efficiency\"",
-			"set ylabel \"Speed up (fl)\"",
-			"set y2label \"Efficiency (fl)\"",
+			"set ylabel \"Speed up\"",
+			"set y2label \"Efficiency\"",
 			"set xlabel \"Processors (int)\"",
             "set y2range [0:100]",
             "set format y2 \"%g%%\"",
