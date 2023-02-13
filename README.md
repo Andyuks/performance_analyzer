@@ -10,5 +10,7 @@ Compile using: make
 Erase .o files using: make clean
 
 Use: ./analyzer [OPTIONS]
- --h, --help 		 Help
- -f, --filename=S 		 Name of the dataset file
+
+--h, --help 		 Help
+
+-f, --filename=S 		 Name of the dataset file
