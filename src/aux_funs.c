@@ -60,8 +60,13 @@ int measure_dataset(struct system_t * system, FILE * fp)
 	while(fgets(buf, sizeof(buf), fp) != NULL)
 		system->ncpus++;
 
+	if(system->ncpus==0)
+	{
+		fprintf(stderr,"\033[1;31mError: no information can be obtained from the provided dataset.\033[0m\n");
+		return(ERROR_FORMAT);
+	}
+
     /* Print processor number */
-	printf("\033[1;34m** File analysis **\033[0m\n");
 	printf("\033[1;34m> CPUs:\033[0m %d\n\n", system->ncpus);
 	return(0);
 }
@@ -158,10 +163,13 @@ void print_results(struct system_t * system, FILE * fp)
     /* print results */
 	for(i=0; i < system->ncpus; i++)
 	{
-		fprintf(fp, "%d\t", system->cpus[i]);
-		fprintf(fp, "%f\t", system->runtime[i]);
-		fprintf(fp, "%f\t", system->speedup[i]);
-		fprintf(fp, "%f\n", system->efficiency[i]);
+        if( (system->runtime[i] != 0) && (system->speedup[i] != 0) && (system->efficiency[i] != 0))
+        {
+		    fprintf(fp, "%d\t", system->cpus[i]);
+		    fprintf(fp, "%f\t", system->runtime[i]);
+		    fprintf(fp, "%f\t", system->speedup[i]);
+		    fprintf(fp, "%f\n", system->efficiency[i]);
+        }
 	}
 }
 
