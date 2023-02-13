@@ -22,7 +22,7 @@ Use: ./analyzer [OPTIONS]
 -f, --filename=S 		 Name of the dataset file
 
 *********************************************************
-*Example of use*
+*Examples of use*
 ./analyzer
 ./analyzer -f input/prueba_escalabilidad_2.txt 
 ./analyzer --filename input/prueba.escalabilidad.txt 
