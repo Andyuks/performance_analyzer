@@ -12,6 +12,7 @@ Compile using: make
 Erase .o files using: make clean
 
 *********************************************************
+*Execution*
 
 Use: ./analyzer [OPTIONS]
 
