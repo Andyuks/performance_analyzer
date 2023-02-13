@@ -23,6 +23,9 @@ Use: ./analyzer [OPTIONS]
 
 *********************************************************
 *Examples of use*
+
 ./analyzer
+
 ./analyzer -f input/prueba_escalabilidad_2.txt 
+
 ./analyzer --filename input/prueba.escalabilidad.txt 
