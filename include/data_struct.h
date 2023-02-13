@@ -1,7 +1,7 @@
 /* data_struct.h*/
 #define ERROR_FILE 1
 #define ERROR_DIR 2
-#define ERROR_FORMAT 2
+#define ERROR_FORMAT 3
 
 /* structure of the system*/
 struct system_t
