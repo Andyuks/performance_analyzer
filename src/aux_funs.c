@@ -13,7 +13,7 @@
 #endif /* DATA_STRUCT_H */
 
 #define NUM_COMMANDS_RUNTIME 7
-#define NUM_COMMANDS_SUEF 13
+#define NUM_COMMANDS_SUEF 14
 
 ///////////////
 // Workspace //
@@ -246,6 +246,7 @@ int produce_graphics_gnuplot(struct system_t * system)
             "set y2tics nomirror",
             "set logscale x",
             "set logscale y",
+            "set logscale y2",
             "set key bottom right box lt -1 lw 2",
 			"set terminal png",
 			"set output \"./imgs/speedup_efficiency.png\"",
