@@ -163,7 +163,7 @@ void print_results(struct system_t * system, FILE * fp)
     /* print results */
 	for(i=0; i < system->ncpus; i++)
 	{
-        if( (system->runtime[i] != 0) && (system->speedup[i] != 0) && (system->efficiency[i] != 0))
+        if( (system->runtime[i] != 0) && (system->speedup[i] != 0) && (system->efficiency[i] != 0)) // get if there is data
         {
 		    fprintf(fp, "%d\t", system->cpus[i]);
 		    fprintf(fp, "%f\t", system->runtime[i]);
